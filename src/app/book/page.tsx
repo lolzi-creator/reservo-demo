@@ -9,16 +9,25 @@ import Counter from '@/components/Counter';
 import ClickSpark from '@/components/ClickSpark';
 // import ElectricBorder from '@/components/ElectricBorder';
 import SpotlightCard from '@/components/SpotlightCard';
+import TimerDisplay from '@/components/TimerDisplay';
 import { Booking, addBooking } from '@/lib/storage';
+import { completeReservationTimer } from '@/lib/timer';
 
 // Booking page with Stepper component
 export default function BookPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
+    specialRequests: '',
+    dietaryRestrictions: '',
+    occasion: '',
+    preferredSeating: '',
     date: '',
     time: '',
-    people: 1
+    people: 1,
+    agreedToTerms: false,
+    marketingConsent: false
   });
   const [booking, setBooking] = useState<Booking | null>(null);
 
@@ -29,12 +38,19 @@ export default function BookPage() {
   const handleBookingSubmit = async () => {
     try {
       console.log('💾 Creating booking in Supabase...');
+      
+      // Complete the timer and get timing data
+      const timerResult = completeReservationTimer();
+      
       const newBooking = await addBooking({
         name: formData.name,
         email: formData.email,
         date: formData.date,
         time: formData.time,
-        people: formData.people
+        people: formData.people,
+        completion_time: timerResult?.time || 0,
+        booking_method: timerResult?.method || 'manual',
+        start_time: new Date().toISOString()
       });
 
       if (!newBooking) {
@@ -73,27 +89,34 @@ export default function BookPage() {
     }
   };
 
-  const isFormValid = formData.name && formData.email && formData.date && formData.time && formData.people > 0;
+  const isFormValid = formData.name && formData.email && formData.phone && formData.date && formData.time && formData.people > 0 && formData.preferredSeating && formData.agreedToTerms;
 
   return (
     <Section className="py-8 md:py-16">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8 md:mb-12">
+          <div className="flex justify-center mb-6">
+            <TimerDisplay showMethod={true} />
+          </div>
+          
           <h1 className="text-3xl md:text-4xl font-light text-white mb-4 md:mb-6">
-            Make a Reservation
+            Manual Booking Process
           </h1>
           <p className="text-white/80 text-base md:text-lg font-light">
-            Follow the steps below to secure your table
+            Complete all required steps and forms to secure your table reservation
+          </p>
+          <p className="text-white/60 text-sm mt-2">
+            This comprehensive process ensures we have all details for your perfect dining experience
           </p>
         </div>
 
         <div className="card">
           <CustomStepper onComplete={handleBookingSubmit} hideNavigation={!!booking}>
-            {/* Step 1: Basic Information */}
+            {/* Step 1: Personal Information */}
             <CustomStep>
               <div className="space-y-4 md:space-y-6">
                 <h3 className="text-xl md:text-2xl font-medium text-white mb-4 md:mb-6">
-                  Basic Information
+                  Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div>
@@ -105,9 +128,10 @@ export default function BookPage() {
                       value={formData.name}
                       onChange={(e) => handleFormUpdate({ name: e.target.value })}
                       className="input-field w-full"
-                      placeholder="Enter your full name"
+                      placeholder="Enter your full legal name"
                       required
                     />
+                    <p className="text-white/50 text-xs mt-1">Must match government ID</p>
                   </div>
                   <div>
                     <label className="block text-white/80 font-medium mb-2">
@@ -121,7 +145,126 @@ export default function BookPage() {
                       placeholder="Enter your email"
                       required
                     />
+                    <p className="text-white/50 text-xs mt-1">Confirmation will be sent here</p>
                   </div>
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleFormUpdate({ phone: e.target.value })}
+                      className="input-field w-full"
+                      placeholder="+1 (555) 123-4567"
+                      required
+                    />
+                    <p className="text-white/50 text-xs mt-1">For reservation updates and confirmations</p>
+                  </div>
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Special Occasion
+                    </label>
+                    <select
+                      value={formData.occasion}
+                      onChange={(e) => handleFormUpdate({ occasion: e.target.value })}
+                      className="input-field w-full"
+                    >
+                      <option value="">Select an occasion</option>
+                      <option value="birthday">Birthday</option>
+                      <option value="anniversary">Anniversary</option>
+                      <option value="business">Business Meeting</option>
+                      <option value="date">Date Night</option>
+                      <option value="celebration">Celebration</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-white/80 font-medium mb-2">
+                    Dietary Restrictions & Allergies
+                  </label>
+                  <textarea
+                    value={formData.dietaryRestrictions}
+                    onChange={(e) => handleFormUpdate({ dietaryRestrictions: e.target.value })}
+                    className="input-field w-full h-24"
+                    placeholder="Please list any dietary restrictions, allergies, or special requests..."
+                  />
+                  <p className="text-white/50 text-xs mt-1">Help us prepare the perfect dining experience</p>
+                </div>
+              </div>
+            </CustomStep>
+
+            {/* Step 2: Reservation Preferences */}
+            <CustomStep>
+              <div className="space-y-4 md:space-y-6">
+                <h3 className="text-xl md:text-2xl font-medium text-white mb-4 md:mb-6">
+                  Reservation Preferences
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Preferred Seating *
+                    </label>
+                    <select
+                      value={formData.preferredSeating}
+                      onChange={(e) => handleFormUpdate({ preferredSeating: e.target.value })}
+                      className="input-field w-full"
+                      required
+                    >
+                      <option value="">Choose seating preference</option>
+                      <option value="window">Window Table</option>
+                      <option value="booth">Private Booth</option>
+                      <option value="bar">Bar Seating</option>
+                      <option value="patio">Outdoor Patio</option>
+                      <option value="main">Main Dining Room</option>
+                      <option value="quiet">Quiet Corner</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Number of Guests *
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <ClickSpark sparkColor="#ef4444" sparkCount={3} sparkRadius={8}>
+                        <button
+                          type="button"
+                          onClick={() => handleFormUpdate({ people: Math.max(1, formData.people - 1) })}
+                          className="w-12 h-12 bg-red-600/20 border border-red-500/30 rounded-lg text-white hover:bg-red-600/30 transition-colors"
+                        >
+                          −
+                        </button>
+                      </ClickSpark>
+                      <Counter 
+                        value={formData.people}
+                        onChange={(value) => handleFormUpdate({ people: value })}
+                        className="mx-4"
+                      />
+                      <ClickSpark sparkColor="#10b981" sparkCount={3} sparkRadius={8}>
+                        <button
+                          type="button"
+                          onClick={() => handleFormUpdate({ people: Math.min(12, formData.people + 1) })}
+                          className="w-12 h-12 bg-green-600/20 border border-green-500/30 rounded-lg text-white hover:bg-green-600/30 transition-colors"
+                        >
+                          +
+                        </button>
+                      </ClickSpark>
+                    </div>
+                    <p className="text-white/50 text-xs mt-1">Maximum 12 guests per reservation</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-white/80 font-medium mb-2">
+                    Special Requests
+                  </label>
+                  <textarea
+                    value={formData.specialRequests}
+                    onChange={(e) => handleFormUpdate({ specialRequests: e.target.value })}
+                    className="input-field w-full h-32"
+                    placeholder="Any special requests for your dining experience? (decorations, cake, specific table arrangements, etc.)"
+                  />
                 </div>
               </div>
             </CustomStep>

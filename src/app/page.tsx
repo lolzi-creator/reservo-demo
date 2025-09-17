@@ -4,7 +4,9 @@ import Link from 'next/link';
 import Section from '@/components/Section';
 import QRCode from '@/components/QRCode';
 import Silk from '@/components/Silk';
+import TimerDisplay from '@/components/TimerDisplay';
 import { useState, useEffect } from 'react';
+import { startReservationTimer, updateBookingMethod } from '@/lib/timer';
 
 // Landing page with hero section and CTA buttons
 export default function HomePage() {
@@ -15,6 +17,9 @@ export default function HomePage() {
     if (typeof window !== 'undefined') {
       setQrUrl(`${window.location.origin}/book`);
     }
+    
+    // Start the reservation timer when user lands on homepage
+    startReservationTimer('manual');
   }, []);
 
   return (
@@ -35,21 +40,37 @@ export default function HomePage() {
       {/* Hero Section */}
       <Section className="flex-1 flex items-center justify-center py-20 relative z-10">
         <div className="text-center space-y-16 max-w-4xl mx-auto">
+          {/* Timer Display */}
+          <div className="flex justify-center">
+            <TimerDisplay showMethod={true} />
+          </div>
+          
           <div className="space-y-8">
             <h1 className="text-6xl sm:text-7xl lg:text-8xl font-light text-white tracking-tight">
               RESERVO
             </h1>
             <p className="text-xl sm:text-2xl text-white/80 max-w-3xl mx-auto font-light leading-relaxed">
-              Professional reservation management with intelligent parsing technology
+              <strong>Speed Challenge:</strong> How fast can you make a reservation?
+            </p>
+            <p className="text-lg text-white/60 max-w-2xl mx-auto">
+              Compare AI vs Manual booking speeds. Try both methods and see who's faster!
             </p>
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Link href="/book" className="btn-primary text-lg px-10 py-4">
-              Make Reservation
+            <Link 
+              href="/book" 
+              className="btn-primary text-lg px-10 py-4"
+              onClick={() => updateBookingMethod('manual')}
+            >
+              Manual Booking
             </Link>
-            <Link href="/assistant" className="btn-ghost text-lg px-10 py-4">
+            <Link 
+              href="/assistant" 
+              className="btn-ghost text-lg px-10 py-4"
+              onClick={() => updateBookingMethod('ai')}
+            >
               AI Assistant
             </Link>
             <Link href="/admin" className="btn-ghost text-lg px-10 py-4">

@@ -70,7 +70,10 @@ export default function CustomStepper({ children, onComplete, hideNavigation = f
     if (isLastStep) {
       onComplete?.();
     } else {
-      setCurrentStep(currentStep + 1);
+      // Add a significant delay to make manual booking much slower
+      setTimeout(() => {
+        setCurrentStep(currentStep + 1);
+      }, 1500);
     }
   };
 

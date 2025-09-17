@@ -10,6 +10,9 @@ export interface Booking {
   time: string;
   people: number;
   created_at?: string;
+  completion_time?: number; // Time in seconds to complete reservation
+  booking_method?: 'ai' | 'manual'; // Track if AI or manual booking
+  start_time?: string; // When user started the booking process
 }
 
 export interface NotificationEvent {

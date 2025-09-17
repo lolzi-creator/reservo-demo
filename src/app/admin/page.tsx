@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Section from '@/components/Section';
 import { getBookings, Booking, onNewBooking, NotificationEvent } from '@/lib/storage';
 import FadeContent from '@/components/FadeContent';
 import ElectricBorder from '@/components/ElectricBorder';
 import AdminLogin from '@/components/AdminLogin';
 import { isAdminAuthenticated, logoutAdmin } from '@/lib/auth';
+import { formatTime as formatDuration } from '@/lib/timer';
 
 // Admin page showing all bookings in a table
 export default function AdminPage() {
@@ -16,6 +17,38 @@ export default function AdminPage() {
   const [newBookingIds, setNewBookingIds] = useState<Set<string>>(new Set());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'fastest' | 'method'>('newest');
+  const [filterMethod, setFilterMethod] = useState<'all' | 'ai' | 'manual'>('all');
+
+  // Process and filter bookings
+  const processedBookings = React.useMemo(() => {
+    let filtered = bookings;
+    
+    // Filter by method
+    if (filterMethod !== 'all') {
+      filtered = filtered.filter(booking => booking.booking_method === filterMethod);
+    }
+    
+    // Sort bookings
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'fastest':
+          const timeA = a.completion_time || 999999;
+          const timeB = b.completion_time || 999999;
+          return timeA - timeB;
+        case 'method':
+          if (a.booking_method === b.booking_method) {
+            return (a.completion_time || 999999) - (b.completion_time || 999999);
+          }
+          return a.booking_method === 'ai' ? -1 : 1;
+        case 'newest':
+        default:
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      }
+    });
+    
+    return sorted;
+  }, [bookings, sortBy, filterMethod]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -213,7 +246,7 @@ export default function AdminPage() {
               Admin Panel
             </h1>
             <p className="text-white/80 text-lg font-light">
-              View and manage all reservations
+              View and manage all reservations • Speed Challenge Leaderboard
               {notifications.length > 0 && (
                 <span className="ml-2 inline-flex items-center gap-1 text-green-400">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -254,15 +287,50 @@ export default function AdminPage() {
             </div>
           </div>
         ) : (
-          <div className="card">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-white">
-                All Reservations
-              </h2>
-              <div className="text-sm text-white/60">
-                Total: <span className="font-semibold text-white/80">{bookings.length}</span>
+          <>
+            {/* Speed Challenge Controls */}
+            <div className="card mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Speed Challenge Leaderboard</h3>
+                  <p className="text-white/60 text-sm">Compare AI vs Manual booking speeds</p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Sort Controls */}
+                  <select 
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'fastest' | 'method')}
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-400"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="fastest">Fastest First</option>
+                    <option value="method">By Method</option>
+                  </select>
+                  
+                  {/* Filter Controls */}
+                  <select 
+                    value={filterMethod}
+                    onChange={(e) => setFilterMethod(e.target.value as 'all' | 'ai' | 'manual')}
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-400"
+                  >
+                    <option value="all">All Methods</option>
+                    <option value="ai">AI Only</option>
+                    <option value="manual">Manual Only</option>
+                  </select>
+                </div>
               </div>
             </div>
+            
+            <div className="card">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-white">
+                  Reservations {filterMethod !== 'all' && `(${filterMethod === 'ai' ? 'AI' : 'Manual'})`}
+                </h2>
+                <div className="text-sm text-white/60">
+                  Showing: <span className="font-semibold text-white/80">{processedBookings.length}</span> / <span className="font-semibold text-white/80">{bookings.length}</span>
+                </div>
+              </div>
 
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
@@ -287,10 +355,16 @@ export default function AdminPage() {
                     <th className="text-left py-3 px-4 text-sm font-medium text-white/80">
                       People
                     </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-white/80">
+                      Method
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-white/80">
+                      Speed
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map((booking) => {
+                  {processedBookings.map((booking) => {
                     const isNew = newBookingIds.has(booking.id);
                     return (
                       <tr 
@@ -341,6 +415,33 @@ export default function AdminPage() {
                             )}
                           </div>
                         </td>
+                        <td className={`py-3 px-4 text-sm ${isNew ? 'text-blue-200' : 'text-white/80'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              booking.booking_method === 'ai' 
+                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                                : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                            }`}>
+                              {booking.booking_method === 'ai' ? 'AI' : 'Manual'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className={`py-3 px-4 text-sm ${isNew ? 'text-blue-200' : 'text-white/80'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-mono font-medium ${
+                              booking.completion_time && booking.completion_time < 30
+                                ? 'text-green-400'
+                                : booking.completion_time && booking.completion_time < 60
+                                ? 'text-yellow-400'
+                                : 'text-red-400'
+                            }`}>
+                              {booking.completion_time ? formatDuration(booking.completion_time) : '—'}
+                            </span>
+                            {booking.completion_time && booking.completion_time < 30 && (
+                              <span className="text-green-400 text-xs">FAST</span>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -350,7 +451,7 @@ export default function AdminPage() {
 
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
-              {bookings.map((booking) => {
+              {processedBookings.map((booking) => {
                 const isNew = newBookingIds.has(booking.id);
                 return (
                   <div 
@@ -407,6 +508,36 @@ export default function AdminPage() {
                           )}
                         </div>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Method:</span>
+                        <div className="flex items-center gap-2">
+                          {booking.booking_method === 'ai' ? '🤖' : '📝'}
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            booking.booking_method === 'ai' 
+                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                              : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                          }`}>
+                            {booking.booking_method === 'ai' ? 'AI' : 'Manual'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60">Speed:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-mono font-medium ${
+                            booking.completion_time && booking.completion_time < 30
+                              ? 'text-green-400'
+                              : booking.completion_time && booking.completion_time < 60
+                              ? 'text-yellow-400'
+                              : 'text-red-400'
+                          }`}>
+                            {booking.completion_time ? formatDuration(booking.completion_time) : '—'}
+                          </span>
+                          {booking.completion_time && booking.completion_time < 30 && (
+                            <span className="text-green-400">⚡</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     
                     {isNew && (
@@ -419,6 +550,7 @@ export default function AdminPage() {
               })}
             </div>
           </div>
+          </>
         )}
       </div>
     </Section>

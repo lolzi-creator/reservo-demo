@@ -6,7 +6,9 @@ import Section from '@/components/Section';
 import ClickSpark from '@/components/ClickSpark';
 import FadeContent from '@/components/FadeContent';
 import Counter from '@/components/Counter';
+import TimerDisplay from '@/components/TimerDisplay';
 import { addBooking } from '@/lib/storage';
+import { completeReservationTimer } from '@/lib/timer';
 
 interface Message {
   id: string;
@@ -70,7 +72,7 @@ export default function AssistantPage() {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const simulateTyping = (duration: number = 1500) => {
+  const simulateTyping = (duration: number = 300) => {
     setIsTyping(true);
     return new Promise(resolve => {
       setTimeout(() => {
@@ -122,13 +124,13 @@ export default function AssistantPage() {
       userData: { ...prev.userData, name: setupForm.name, email: setupForm.email }
     }));
 
-    await simulateTyping(800);
-    addMessage(`Hi ${setupForm.name}! 👋 I&apos;m your AI reservation assistant. I&apos;ll help you book the perfect table in just a few quick steps.`, 'ai');
+    await simulateTyping(200);
+    addMessage(`Hi ${setupForm.name}! I&apos;m your AI reservation assistant. I&apos;ll help you book the perfect table in just a few quick steps.`, 'ai');
     
-    await simulateTyping(1200);
-    addMessage("Let me check our availability... 🔍", 'ai');
+    await simulateTyping(300);
+    addMessage("Let me check our availability...", 'ai');
     
-    await simulateTyping(2000);
+    await simulateTyping(400);
     addMessage("Great news! We have several slots available. When would you like to dine with us?", 'ai');
     
     setChatState(prev => ({ ...prev, step: 'date' }));
@@ -185,15 +187,15 @@ export default function AssistantPage() {
       
       addMessage(`Perfect! Let me confirm your reservation details:
 
-📅 **Date**: ${dateStr}
-🕐 **Time**: ${userData.time}
-👥 **Party Size**: ${customInput.people} ${customInput.people === 1 ? 'person' : 'people'}
-📧 **Contact**: ${userData.email}
+**Date**: ${dateStr}
+**Time**: ${userData.time}
+**Party Size**: ${customInput.people} ${customInput.people === 1 ? 'person' : 'people'}
+**Contact**: ${userData.email}
 
 Everything look good?`, 'ai');
       
       setShowChoices([
-        { id: 'confirm', text: '✅ Yes, book it!', value: 'confirm' },
+        { id: 'confirm', text: 'Yes, book it!', value: 'confirm' },
         { id: 'modify', text: '✏️ Let me change something', value: 'modify' }
       ]);
     }
@@ -264,32 +266,39 @@ Everything look good?`, 'ai');
       
       addMessage(`Perfect! Let me confirm your reservation details:
 
-📅 **Date**: ${dateStr}
-🕐 **Time**: ${userData.time}
-👥 **Party Size**: ${choice.value} ${(choice.value as number) === 1 ? 'person' : 'people'}
-📧 **Contact**: ${userData.email}
+**Date**: ${dateStr}
+**Time**: ${userData.time}
+**Party Size**: ${choice.value} ${(choice.value as number) === 1 ? 'person' : 'people'}
+**Contact**: ${userData.email}
 
 Everything look good?`, 'ai');
       
       setShowChoices([
-        { id: 'confirm', text: '✅ Yes, book it!', value: 'confirm' },
+        { id: 'confirm', text: 'Yes, book it!', value: 'confirm' },
         { id: 'modify', text: '✏️ Let me change something', value: 'modify' }
       ]);
 
     } else if (chatState.step === 'confirm') {
       if (choice.value === 'confirm') {
         await simulateTyping(2000);
-        addMessage("🎉 Fantastic! I&apos;m booking your table now...", 'ai');
+        addMessage("Fantastic! I&apos;m booking your table now...", 'ai');
         
         // Actually create the booking
         try {
           console.log('💾 Assistant: Creating booking in Supabase...');
+          
+          // Complete the timer and get timing data
+          const timerResult = completeReservationTimer();
+          
           const newBooking = await addBooking({
             name: chatState.userData.name,
             email: chatState.userData.email,
             date: chatState.userData.date,
             time: chatState.userData.time,
-            people: chatState.userData.people
+            people: chatState.userData.people,
+            completion_time: timerResult?.time || 0,
+            booking_method: timerResult?.method || 'ai',
+            start_time: new Date().toISOString()
           });
 
           if (!newBooking) {
@@ -313,7 +322,7 @@ Everything look good?`, 'ai');
             await simulateTyping(1500);
             if (emailResult.success) {
               if (emailResult.demo) {
-                addMessage(`✅ **Reservation Confirmed!**
+                addMessage(`**Reservation Confirmed!**
 
 Your table has been successfully booked. In a real environment, you would receive a confirmation email at ${chatState.userData.email}.
 
@@ -321,7 +330,7 @@ Your table has been successfully booked. In a real environment, you would receiv
 
 We're looking forward to serving you! If you need to make any changes, feel free to contact us.`, 'ai');
               } else {
-                addMessage(`✅ **Reservation Confirmed!**
+                addMessage(`**Reservation Confirmed!**
 
 Your table has been successfully booked. A confirmation email has been sent to ${chatState.userData.email}.
 
@@ -330,7 +339,7 @@ Your table has been successfully booked. A confirmation email has been sent to $
 We're looking forward to serving you! If you need to make any changes, feel free to contact us.`, 'ai');
               }
             } else {
-              addMessage(`✅ **Reservation Confirmed!**
+              addMessage(`**Reservation Confirmed!**
 
 Your table has been successfully booked. There was an issue sending the confirmation email, but your reservation is secure.
 
@@ -341,7 +350,7 @@ We're looking forward to serving you! If you need to make any changes, feel free
           } catch (emailError) {
             console.error('Email sending failed:', emailError);
             await simulateTyping(1500);
-            addMessage(`✅ **Reservation Confirmed!**
+            addMessage(`**Reservation Confirmed!**
 
 Your table has been successfully booked. There was an issue sending the confirmation email, but your reservation is secure.
 
@@ -397,11 +406,15 @@ We're looking forward to serving you! If you need to make any changes, feel free
         <div className="max-w-2xl mx-auto px-4">
           <FadeContent duration={1000}>
             <div className="text-center mb-8">
+              <div className="flex justify-center mb-6">
+                <TimerDisplay showMethod={true} />
+              </div>
+              
               <h1 className="text-3xl md:text-4xl font-light text-white mb-6">
-                AI Reservation Assistant
+                AI Assistant
               </h1>
               <p className="text-white/80 text-lg font-light">
-                Let our AI help you find and book the perfect table
+                Lightning-fast AI booking - let's beat the manual process!
               </p>
             </div>
           </FadeContent>
@@ -471,14 +484,18 @@ We're looking forward to serving you! If you need to make any changes, feel free
     <Section className="py-4 md:py-8">
       <div className="max-w-4xl mx-auto px-4 h-[calc(100vh-200px)] flex flex-col">
         {/* Chat Header */}
-        <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-t-2xl p-4 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-lg">🤖</span>
+        <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-t-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <span className="text-lg">🤖</span>
+            </div>
+            <div>
+              <h2 className="font-medium text-white">AI Assistant</h2>
+              <p className="text-white/60 text-sm">Online • Speed Mode Active</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-medium text-white">AI Assistant</h2>
-            <p className="text-white/60 text-sm">Online • Ready to help</p>
-          </div>
+          
+          <TimerDisplay showMethod={true} />
         </div>
 
         {/* Messages Container */}
