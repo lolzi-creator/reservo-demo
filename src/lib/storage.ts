@@ -1,5 +1,6 @@
-// Storage utilities for managing bookings in localStorage
-// Handles SSR safety with window checks
+// Storage utilities for managing bookings with Supabase
+import { supabase } from './supabase';
+import { sendBookingConfirmation } from './email';
 
 export interface Booking {
   id: string;
@@ -8,53 +9,125 @@ export interface Booking {
   date: string;
   time: string;
   people: number;
+  created_at?: string;
 }
 
-const STORAGE_KEY = 'bookings';
+export interface NotificationEvent {
+  type: 'new_booking';
+  booking: Booking;
+  timestamp: number;
+}
 
-// Check if we're in browser environment
-const isClient = typeof window !== 'undefined';
+type NotificationCallback = (event: NotificationEvent) => void;
+const notificationListeners: NotificationCallback[] = [];
 
-// Get all bookings from localStorage
-export function getBookings(): Booking[] {
-  if (!isClient) return [];
-  
+// Get all bookings from Supabase
+export async function getBookings(): Promise<Booking[]> {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching bookings:', error);
+      return [];
+    }
+    
+    return data || [];
   } catch (error) {
-    console.error('Error reading bookings from localStorage:', error);
+    console.error('Error fetching bookings:', error);
     return [];
   }
 }
 
-// Add a new booking to localStorage
-export function addBooking(booking: Omit<Booking, 'id'>): Booking {
-  const newBooking: Booking = {
-    ...booking,
-    id: Date.now().toString()
-  };
-  
-  if (!isClient) return newBooking;
-  
+// Add a new booking to Supabase
+export async function addBooking(booking: Omit<Booking, 'id' | 'created_at'>): Promise<Booking | null> {
   try {
-    const existingBookings = getBookings();
-    const updatedBookings = [...existingBookings, newBooking];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedBookings));
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([booking])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error adding booking:', error);
+      return null;
+    }
+
+    const newBooking = data as Booking;
+    
+    // Send email confirmation
+    try {
+      await sendBookingConfirmation(newBooking);
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError);
+      // Don't fail the booking if email fails
+    }
+    
+    // Trigger real-time notification
+    notificationListeners.forEach(callback => {
+      callback({
+        type: 'new_booking',
+        booking: newBooking,
+        timestamp: Date.now()
+      });
+    });
+    
     return newBooking;
   } catch (error) {
-    console.error('Error saving booking to localStorage:', error);
-    return newBooking;
+    console.error('Error adding booking:', error);
+    return null;
   }
 }
 
-// Clear all bookings (useful for testing)
-export function clearBookings(): void {
-  if (!isClient) return;
+// Subscribe to new booking notifications
+export function onNewBooking(callback: NotificationCallback): () => void {
+  notificationListeners.push(callback);
   
+  // Set up Supabase real-time subscription
+  const channel = supabase
+    .channel('bookings-channel')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'bookings'
+      },
+      (payload) => {
+        const newBooking = payload.new as Booking;
+        callback({
+          type: 'new_booking',
+          booking: newBooking,
+          timestamp: Date.now()
+        });
+      }
+    )
+    .subscribe();
+
+  // Return cleanup function
+  return () => {
+    const index = notificationListeners.indexOf(callback);
+    if (index > -1) {
+      notificationListeners.splice(index, 1);
+    }
+    supabase.removeChannel(channel);
+  };
+}
+
+// Clear all bookings (useful for testing)
+export async function clearBookings(): Promise<void> {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    const { error } = await supabase
+      .from('bookings')
+      .delete()
+      .gte('id', 0); // Delete all records
+    
+    if (error) {
+      console.error('Error clearing bookings:', error);
+    }
   } catch (error) {
-    console.error('Error clearing bookings from localStorage:', error);
+    console.error('Error clearing bookings:', error);
   }
 }
