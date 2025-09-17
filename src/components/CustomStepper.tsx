@@ -6,6 +6,7 @@ import ClickSpark from './ClickSpark';
 interface CustomStepperProps {
   children: ReactNode[];
   onComplete?: () => void;
+  hideNavigation?: boolean;
 }
 
 interface StepIndicatorProps {
@@ -59,7 +60,7 @@ function StepIndicator({ current, total, onStepClick }: StepIndicatorProps) {
   );
 }
 
-export default function CustomStepper({ children, onComplete }: CustomStepperProps) {
+export default function CustomStepper({ children, onComplete, hideNavigation = false }: CustomStepperProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = children.length;
   const isLastStep = currentStep === totalSteps;
@@ -100,29 +101,31 @@ export default function CustomStepper({ children, onComplete }: CustomStepperPro
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between items-center pt-6 border-t border-white/10">
-        <div>
-          {!isFirstStep && (
-            <ClickSpark sparkColor="#a78bfa" sparkCount={4} sparkRadius={12}>
-              <button
-                onClick={handlePrevious}
-                className="px-6 py-3 text-white/80 hover:text-white transition-colors"
-              >
-                ← Previous
-              </button>
-            </ClickSpark>
-          )}
+      {!hideNavigation && (
+        <div className="flex justify-between items-center pt-6 border-t border-white/10">
+          <div>
+            {!isFirstStep && (
+              <ClickSpark sparkColor="#a78bfa" sparkCount={4} sparkRadius={12}>
+                <button
+                  onClick={handlePrevious}
+                  className="px-6 py-3 text-white/80 hover:text-white transition-colors"
+                >
+                  ← Previous
+                </button>
+              </ClickSpark>
+            )}
+          </div>
+          
+          <ClickSpark sparkColor="#ffffff" sparkCount={6} sparkRadius={15}>
+            <button
+              onClick={handleNext}
+              className="btn-primary px-8 py-3"
+            >
+              {isLastStep ? 'Complete Reservation' : 'Next Step →'}
+            </button>
+          </ClickSpark>
         </div>
-        
-        <ClickSpark sparkColor="#ffffff" sparkCount={6} sparkRadius={15}>
-          <button
-            onClick={handleNext}
-            className="btn-primary px-8 py-3"
-          >
-            {isLastStep ? 'Complete Reservation' : 'Next Step →'}
-          </button>
-        </ClickSpark>
-      </div>
+      )}
     </div>
   );
 }

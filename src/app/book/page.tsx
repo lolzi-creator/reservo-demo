@@ -88,7 +88,7 @@ export default function BookPage() {
         </div>
 
         <div className="card">
-          <CustomStepper onComplete={handleBookingSubmit}>
+          <CustomStepper onComplete={handleBookingSubmit} hideNavigation={!!booking}>
             {/* Step 1: Basic Information */}
             <CustomStep>
               <div className="space-y-4 md:space-y-6">
@@ -212,49 +212,55 @@ export default function BookPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h4 className="text-3xl font-light text-white mb-8">
+                    <h4 className="text-2xl sm:text-3xl font-light text-white mb-6 sm:mb-8 px-4 sm:px-0">
                       Reservation Confirmed!
                     </h4>
                     <SpotlightCard 
-                      className="p-6 mb-8 bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl"
+                      className="p-4 sm:p-6 mb-6 sm:mb-8 bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl"
                       spotlightColor="rgba(96, 165, 250, 0.15)"
                     >
-                      <div className="space-y-3 text-left">
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Name:</span>
-                          <span className="text-white font-medium">{booking.name}</span>
+                      <div className="space-y-4 text-left">
+                        {/* Name Row */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                          <span className="text-white/60 text-sm font-medium">Name:</span>
+                          <span className="text-white font-medium text-base">{booking.name}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Email:</span>
-                          <span className="text-white font-medium">{booking.email}</span>
+                        
+                        {/* Email Row */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                          <span className="text-white/60 text-sm font-medium">Email:</span>
+                          <span className="text-white font-medium text-sm sm:text-base break-all">{booking.email}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Date:</span>
-                          <span className="text-white font-medium">{new Date(booking.date).toLocaleDateString()}</span>
+                        
+                        {/* Date Row */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                          <span className="text-white/60 text-sm font-medium">Date:</span>
+                          <span className="text-white font-medium text-base">{new Date(booking.date).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Time:</span>
-                          <span className="text-white font-medium">{booking.time}</span>
+                        
+                        {/* Time Row */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                          <span className="text-white/60 text-sm font-medium">Time:</span>
+                          <span className="text-white font-medium text-base">{booking.time}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Guests:</span>
-                          <span className="text-white font-medium">{booking.people}</span>
+                        
+                        {/* Guests Row */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                          <span className="text-white/60 text-sm font-medium">Guests:</span>
+                          <span className="text-white font-medium text-base">{booking.people}</span>
                         </div>
-                        <div className="flex justify-between border-t border-white/10 pt-3">
-                          <span className="text-white/60">Reference:</span>
-                          <span className="text-white font-mono text-sm">{booking.id}</span>
+                        
+                        {/* Reference Row */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-t border-white/10 pt-3 mt-4">
+                          <span className="text-white/60 text-sm font-medium">Reference:</span>
+                          <span className="text-white font-mono text-xs sm:text-sm bg-white/10 px-2 py-1 rounded break-all">{booking.id}</span>
                         </div>
                       </div>
                     </SpotlightCard>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <div className="flex justify-center">
                       <ClickSpark sparkColor="#ffffff" sparkCount={6} sparkRadius={15}>
                         <Link href="/book" className="btn-primary">
                           New Reservation
-                        </Link>
-                      </ClickSpark>
-                      <ClickSpark sparkColor="#60a5fa" sparkCount={5} sparkRadius={12}>
-                        <Link href="/admin" className="btn-ghost">
-                          View All Bookings
                         </Link>
                       </ClickSpark>
                     </div>
@@ -262,29 +268,38 @@ export default function BookPage() {
                 ) : (
                   // Review state
                   <div>
-                    <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-6">
+                    <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 mb-6">
                       <div className="space-y-4">
-                        <div className="flex justify-between py-2 border-b border-white/10">
-                          <span className="text-white/60 font-medium">Name:</span>
-                          <span className="text-white font-medium">{formData.name || '—'}</span>
+                        {/* Name */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b border-white/10">
+                          <span className="text-white/60 font-medium text-sm">Name:</span>
+                          <span className="text-white font-medium text-base">{formData.name || '—'}</span>
                         </div>
-                        <div className="flex justify-between py-2 border-b border-white/10">
-                          <span className="text-white/60 font-medium">Email:</span>
-                          <span className="text-white font-medium">{formData.email || '—'}</span>
+                        
+                        {/* Email */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b border-white/10">
+                          <span className="text-white/60 font-medium text-sm">Email:</span>
+                          <span className="text-white font-medium text-sm sm:text-base break-all">{formData.email || '—'}</span>
                         </div>
-                        <div className="flex justify-between py-2 border-b border-white/10">
-                          <span className="text-white/60 font-medium">Date:</span>
-                          <span className="text-white font-medium">
+                        
+                        {/* Date */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b border-white/10">
+                          <span className="text-white/60 font-medium text-sm">Date:</span>
+                          <span className="text-white font-medium text-base">
                             {formData.date ? new Date(formData.date).toLocaleDateString() : '—'}
                           </span>
                         </div>
-                        <div className="flex justify-between py-2 border-b border-white/10">
-                          <span className="text-white/60 font-medium">Time:</span>
-                          <span className="text-white font-medium">{formData.time || '—'}</span>
+                        
+                        {/* Time */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2 border-b border-white/10">
+                          <span className="text-white/60 font-medium text-sm">Time:</span>
+                          <span className="text-white font-medium text-base">{formData.time || '—'}</span>
                         </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-white/60 font-medium">Guests:</span>
-                          <span className="text-white font-medium">{formData.people}</span>
+                        
+                        {/* Guests */}
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 py-2">
+                          <span className="text-white/60 font-medium text-sm">Guests:</span>
+                          <span className="text-white font-medium text-base">{formData.people}</span>
                         </div>
                       </div>
                     </div>
