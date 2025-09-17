@@ -53,7 +53,7 @@ export default function HomePage() {
               <strong>Speed Challenge:</strong> How fast can you make a reservation?
             </p>
             <p className="text-lg text-white/60 max-w-2xl mx-auto">
-              Compare AI vs Manual booking speeds. Try both methods and see who's faster!
+              Compare AI vs Manual booking speeds. Try both methods and see who&apos;s faster!
             </p>
           </div>
 

@@ -414,7 +414,7 @@ We're looking forward to serving you! If you need to make any changes, feel free
                 AI Assistant
               </h1>
               <p className="text-white/80 text-lg font-light">
-                Lightning-fast AI booking - let's beat the manual process!
+                Lightning-fast AI booking - let&apos;s beat the manual process!
               </p>
             </div>
           </FadeContent>

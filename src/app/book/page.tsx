@@ -236,11 +236,9 @@ export default function BookPage() {
                           −
                         </button>
                       </ClickSpark>
-                      <Counter 
-                        value={formData.people}
-                        onChange={(value) => handleFormUpdate({ people: value })}
-                        className="mx-4"
-                      />
+                      <div className="flex items-center justify-center w-20 h-12 bg-white/10 border border-white/20 rounded-lg">
+                        <span className="text-white font-bold text-xl">{formData.people}</span>
+                      </div>
                       <ClickSpark sparkColor="#10b981" sparkCount={3} sparkRadius={8}>
                         <button
                           type="button"
