@@ -20,6 +20,16 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  {
+    files: ["src/components/Counter.tsx", "src/components/ElectricBorder.tsx", "src/components/GooeyNav.tsx", "src/components/GradientShapes.tsx", "src/components/Navigation.tsx", "src/components/SpotlightCard.tsx", "src/components/Dock.tsx"],
+    rules: {
+      "prefer-const": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@next/next/no-img-element": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

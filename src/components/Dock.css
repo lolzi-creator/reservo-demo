@@ -1,0 +1,84 @@
+.dock-outer {
+  margin: 0 0.5rem;
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+}
+
+.dock-panel {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  width: fit-content;
+  gap: 1rem;
+  border-radius: 1rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 0.5rem 0.5rem;
+}
+
+.dock-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.dock-item-active {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    0 0 20px rgba(59, 130, 246, 0.3),
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dock-item-active::before {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(45deg, #60a5fa, #a78bfa);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.6);
+}
+
+.dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-label {
+  position: absolute;
+  top: -1.5rem;
+  left: 50%;
+  width: fit-content;
+  white-space: pre;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  color: #fff;
+  transform: translateX(-50%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
